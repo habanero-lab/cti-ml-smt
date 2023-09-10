@@ -1,0 +1,9 @@
+x: int | float | Array(int, 1) | Array(float, 1) | Array(bool, 1) | Array(int, 2) | Array(float, 2) | Array(bool, 2) | Array(int, 3) | Array(float, 3) | Array(bool, 3) | List(int) | List(float) | List(bool) | List(Array(int, 1)) | List(Array(float, 1)) | List(Array(bool, 1)) | List(Array(int, 2)) | List(Array(float, 2)) | List(Array(bool, 2))
+
+F: int | float | Array(int, 1) | Array(float, 1) | Array(bool, 1) | Array(int, 2) | Array(float, 2) | Array(bool, 2) | Array(int, 3) | Array(float, 3) | Array(bool, 3) | List(int) | List(float) | List(bool) | List(Array(int, 1)) | List(Array(float, 1)) | List(Array(bool, 1)) | List(Array(int, 2)) | List(Array(float, 2)) | List(Array(bool, 2))
+
+A: int | float | Array(int, 1) | Array(float, 1) | Array(bool, 1) | Array(int, 2) | Array(float, 2) | Array(bool, 2) | Array(int, 3) | Array(float, 3) | Array(bool, 3) | List(int) | List(float) | List(bool) | List(Array(int, 1)) | List(Array(float, 1)) | List(Array(bool, 1)) | List(Array(int, 2)) | List(Array(float, 2)) | List(Array(bool, 2))
+
+i: int | float | Array(int, 1) | Array(float, 1) | Array(bool, 1) | Array(int, 2) | Array(float, 2) | Array(bool, 2) | Array(int, 3) | Array(float, 3) | Array(bool, 3) | List(int) | List(float) | List(bool) | List(Array(int, 1)) | List(Array(float, 1)) | List(Array(bool, 1)) | List(Array(int, 2)) | List(Array(float, 2)) | List(Array(bool, 2))
+
+iterations: int | float | Array(int, 1) | Array(float, 1) | Array(bool, 1) | Array(int, 2) | Array(float, 2) | Array(bool, 2) | Array(int, 3) | Array(float, 3) | Array(bool, 3) | List(int) | List(float) | List(bool) | List(Array(int, 1)) | List(Array(float, 1)) | List(Array(bool, 1)) | List(Array(int, 2)) | List(Array(float, 2)) | List(Array(bool, 2))

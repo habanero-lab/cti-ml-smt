@@ -1,0 +1,51 @@
+def func0_unopt(seeds: Array(int32, 1), degrees: Array(int32, 1), alpha: float64, epsilon: float64,
+          num_nodes: int32, adj_indices: Array(int32, 1), adj_indptr: Array(int32, 1)) -> Array(float64, 2):
+
+    alpha_exp = (float64(2.0) * alpha) / (float64(1.0) + alpha)
+    alpha_degree_exp = div(((float64(1.0) - alpha) / (float64(1.0) + alpha)), degrees)
+    epsilon_degree_exp = mul(degrees, epsilon)
+
+    num_seeds = int32(seeds.shape(0))
+    out = empty((num_seeds, num_nodes), float64())
+    for i in range(num_seeds):
+        seed = seeds[i]
+        p = zeros(num_nodes, float64())
+        r = zeros(num_nodes, float64())
+        r[seed] = 1.0
+
+        frontier = empty(1, int32())
+        frontier[0] = seed
+        while frontier.shape(0) > 0:
+
+            r_prime = add(r, 0.0) # instead of r.copy()
+            for node_idx in frontier:
+                p[node_idx] = p[node_idx] + alpha_exp * r[node_idx]
+                r_prime[node_idx] = 0.0
+
+            for src_idx in frontier:
+                update = alpha_degree_exp[src_idx] * r[src_idx]
+                for j in range(adj_indptr[src_idx], adj_indptr[src_idx+1]):
+                    dst_idx = adj_indices[j]
+                    r_prime[dst_idx] = r_prime[dst_idx] + update
+
+            r = r_prime
+
+            # frontier = where(logical_and(ge(r, epsilon_degree_exp), gt(degrees, 0))) # expand & fuse
+            num_elems = 0
+            cond = zeros(num_nodes, int32())
+            for j in range(num_nodes):
+                if (r[j] >= epsilon_degree_exp[j]) and (degrees[j] > 0):
+                    cond[j] = 1
+                    num_elems += 1
+            idx = 0
+            frontier = empty(num_elems, int32())
+            for j in range(num_nodes):
+                if cond[j] == 1:
+                    frontier[idx] = j
+                    idx += 1
+
+        # out.append(p)
+        for j in range(num_nodes):
+            out[i,j] = p[j]
+
+    return out.T

@@ -1,0 +1,101 @@
+def dist(a: Array(float32, 2), i_a: int32, b: Array(float32, 2), i_b: int32,
+         DIST_FN_COUNTER: Array(int32, 1)) -> float32:
+    DIST_FN_COUNTER[0] += 1
+    total: float32 = 0.0
+    for j in range(a.shape(1)):
+        total -= a[i_a, j] * b[i_b, j]
+    return total
+
+
+def single_search_knn(k2i0: Array(int32, 1), value0: Array(int32, 1), idx0: Array(int32, 1),
+                      k2i1: Dict(int32, int32), value1: Array(int32, 1), idx1: Array(int32, 1),
+                      k2i2: Dict(int32, int32), value2: Array(int32, 1), idx2: Array(int32, 1),
+                      k2i3: Dict(int32, int32), value3: Array(int32, 1), idx3: Array(int32, 1),
+                      data: Array(float32, 2), queries: Array(float32, 2), qi: int32,
+                      v_entry: int32, ef: int32, n_results: int32,
+                      DIST_FN_COUNTER: Array(int32, 1)) -> Array(int32, 1):
+    v_curr = v_entry
+    d_curr = dist(queries, qi, data, v_curr, DIST_FN_COUNTER)
+
+    # Greedy walk
+    for graph_id in range(1, 4):
+        changed = True
+        while changed:
+            changed = False
+            if graph_id == 1:
+                id = k2i1[v_curr]
+                idx = idx1
+                value = value1
+            elif graph_id == 2:
+                id = k2i2[v_curr]
+                idx = idx2
+                value = value2
+            elif graph_id == 3:
+                id = k2i3[v_curr]
+                idx = idx3
+                value = value3
+            for i in range(idx[id], idx[id+1]):
+                neib = value[i]
+                d = dist(data, neib, queries, qi, DIST_FN_COUNTER)
+                if d < d_curr:
+                    d_curr = d
+                    v_curr = neib
+                    changed = True
+
+    # Beam search (Algorithm 2 in [2])
+    candidates = heapinit(d_curr, v_curr)
+    results = heapinit(float32(-1) * d_curr, v_curr)
+    seen = zeros(k2i0.shape(0), int32())
+    seen[v_curr] = 1
+
+    while heapsize(candidates) > 0:
+        d_best = heappeek_key(candidates)
+        v_best = heappeek_val(candidates)
+        heappop(candidates)
+
+        d_worst = float32(-1) * heappeek_key(results)
+        if d_best > d_worst:
+            break
+
+        id = k2i0[v_best]
+        for i in range(idx0[id], idx0[id+1]):
+            neib = value0[i]
+            if seen[neib] == 0:
+                seen[neib] = 1
+                d_neib = dist(data, neib, queries, qi, DIST_FN_COUNTER)
+                d_worst = float32(-1) * heappeek_key(results)
+                if (heapsize(results) < ef) or (d_neib < d_worst):
+                    heappush(candidates, d_neib, neib)
+                    heappush(results, float32(-1) * d_neib, neib)
+                    if heapsize(results) > ef:
+                        heappop(results)
+
+    n = heapsize(results) - n_results
+    for i in range(n):
+        heappop(results)
+
+    ret = empty(n_results, int32())
+    for i in range(n_results):
+        v_best = heappeek_val(results)
+        ret[n_results-1-i] = v_best
+    return ret
+
+
+def search_knn(k2i0: Array(int32, 1), value0: Array(int32, 1), idx0: Array(int32, 1),
+               k2i1: Dict(int32, int32), value1: Array(int32, 1), idx1: Array(int32, 1),
+               k2i2: Dict(int32, int32), value2: Array(int32, 1), idx2: Array(int32, 1),
+               k2i3: Dict(int32, int32), value3: Array(int32, 1), idx3: Array(int32, 1),
+               data: Array(float32, 2), queries: Array(float32, 2),
+               v_entry: int32, ef: int32, n_results: int32,
+               DIST_FN_COUNTER: Array(int32, 1)) -> Array(int32, 2):
+
+    n_queries = int32(queries.shape(0))
+    all_results = empty((n_queries, n_results), int32())
+    for i in range(n_queries):
+        results = single_search_knn(k2i0, value0, idx0, k2i1, value1, idx1,
+                                    k2i2, value2, idx2, k2i3, value3, idx3,
+                                    data, queries, i, v_entry, ef, n_results, DIST_FN_COUNTER)
+        for j in range(n_results):
+            all_results[i, j] = results[j]
+
+    return all_results

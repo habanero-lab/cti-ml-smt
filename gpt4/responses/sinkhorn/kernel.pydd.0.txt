@@ -1,0 +1,17 @@
+K: Array(float, 2) | Array(int, 2) | List(Array(float, 2)) | List(Array(int, 2)) | Dict(int, Array(float, 2)) | Dict(int, Array(int, 2)) | Array(float, 1) | Array(int, 1) | List(Array(float, 1)) | List(Array(int, 1)) | Dict(int, Array(float, 1)) | Dict(int, Array(int, 1)) | Array(bool, 2) | List(Array(bool, 2)) | Dict(int, Array(bool, 2)) | Array(bool, 1) | List(Array(bool, 1)) | Dict(int, Array(bool, 1)) | float | int 
+
+M: Array(float, 2) | Array(int, 2) | List(Array(float, 2)) | List(Array(int, 2)) | Dict(int, Array(float, 2)) | Dict(int, Array(int, 2)) | Array(float, 1) | Array(int, 1) | List(Array(float, 1)) | List(Array(int, 1)) | Dict(int, Array(float, 1)) | Dict(int, Array(int, 1)) | Array(bool, 2) | List(Array(bool, 2)) | Dict(int, Array(bool, 2)) | Array(bool, 1) | List(Array(bool, 1)) | Dict(int, Array(bool, 1)) | float | int 
+
+r: Array(float, 1) | Array(int, 1) | List(float) | List(int) | Dict(int, float) | Dict(int, int) | Array(float, 2) | Array(int, 2) | List(Array(float, 1)) | List(Array(int, 1)) | Dict(int, Array(float, 1)) | Dict(int, Array(int, 1)) | Array(bool, 1) | List(Array(bool, 1)) | Dict(int, Array(bool, 1)) | Array(bool, 2) | List(Array(bool, 2)) | Dict(int, Array(bool, 2)) | float | int 
+
+x: Array(float, 1) | Array(int, 1) | List(float) | List(int) | Dict(int, float) | Dict(int, int) | Array(float, 2) | Array(int, 2) | List(Array(float, 1)) | List(Array(int, 1)) | Dict(int, Array(float, 1)) | Dict(int, Array(int, 1)) | Array(bool, 1) | List(Array(bool, 1)) | Dict(int, Array(bool, 1)) | Array(bool, 2) | List(Array(bool, 2)) | Dict(int, Array(bool, 2)) | float | int 
+
+max_iter: int | float | bool | Array(int, 1) | Array(float, 1) | Array(bool, 1) | List(int) | List(float) | List(bool) | Dict(int, int) | Dict(int, float) | Dict(int, bool) | Array(int, 2) | Array(float, 2) | Array(bool, 2) | List(Array(int, 1)) | List(Array(float, 1)) | List(Array(bool, 1)) | Dict(int, Array(int, 1)) | Dict(int, Array(float, 1))
+
+values: Array(float, 1) | Array(int, 1) | List(float) | List(int) | Dict(int, float) | Dict(int, int) | Array(float, 2) | Array(int, 2) | List(Array(float, 1)) | List(Array(int, 1)) | Dict(int, Array(float, 1)) | Dict(int, Array(int, 1)) | Array(bool, 1) | List(Array(bool, 1)) | Dict(int, Array(bool, 1)) | Array(bool, 2) | List(Array(bool, 2)) | Dict(int, Array(bool, 2)) | float | int 
+
+columns: Array(int, 1) | Array(float, 1) | List(int) | List(float) | Dict(int, int) | Dict(int, float) | Array(int, 2) | Array(float, 2) | List(Array(int, 1)) | List(Array(float, 1)) | Dict(int, Array(int, 1)) | Dict(int, Array(float, 1)) | Array(bool, 1) | List(Array(bool, 1)) | Dict(int, Array(bool, 1)) | Array(bool, 2) | List(Array(bool, 2)) | Dict(int, Array(bool, 2)) | int | float 
+
+indexes: Array(int, 1) | Array(float, 1) | List(int) | List(float) | Dict(int, int) | Dict(int, float) | Array(int, 2) | Array(float, 2) | List(Array(int, 1)) | List(Array(float, 1)) | Dict(int, Array(int, 1)) | Dict(int, Array(float, 1)) | Array(bool, 1) | List(Array(bool, 1)) | Dict(int, Array(bool, 1)) | Array(bool, 2) | List(Array(bool, 2)) | Dict(int, Array(bool, 2)) | int | float 
+
+ncols_c: int | float | bool | Array(int, 1) | Array(float, 1) | Array(bool, 1) | List(int) | List(float) | List(bool) | Dict(int, int) | Dict(int, float) | Dict(int, bool) | Array(int, 2) | Array(float, 2) | Array(bool, 2) | List(Array(int, 1)) | List(Array(float, 1)) | List(Array(bool, 1)) | Dict(int, Array(int, 1)) | Dict(int, Array(float, 1))

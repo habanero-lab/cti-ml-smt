@@ -1,0 +1,17 @@
+.mypy_cache
+__pycache__
+.cache
+*~
+MonkeyType.egg-info
+htmlcov/
+.coverage
+doc/_build
+dist/
+build/
+.idea/
+.vscode/
+monkeytype.sqlite3
+.pytest_cache/
+.DS_Store
+.tox/
+.DS_Store

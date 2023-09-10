@@ -1,0 +1,9 @@
+x: float | Array(float, 1) | Array(float, 2) | Array(float, 3) | Array(int, 1) | Array(int, 2) | Array(int, 3) | int | bool | List(float) | List(int) | List(bool) | List(Array(float, 1)) | List(Array(float, 2)) | List(Array(float, 3)) | List(Array(int, 1)) | List(Array(int, 2)) | List(Array(int, 3)) | Dict(int, float) | Dict(int, int)
+
+F: Array(float, 1) | Array(float, 2) | Array(int, 1) | Array(int, 2) | List(Array(float, 1)) | List(Array(int, 1)) | float | int | bool | Array(float, 3) | Array(int, 3) | List(Array(float, 2)) | List(Array(float, 3)) | List(Array(int, 2)) | List(Array(int, 3)) | Dict(int, float) | Dict(int, Array(float, 1)) | Dict(int, Array(float, 2)) | Dict(int, Array(int, 1)) | Dict(int, Array(int, 2))
+
+A: Array(float, 1) | Array(float, 2) | Array(int, 1) | Array(int, 2) | List(Array(float, 1)) | List(Array(int, 1)) | float | int | bool | Array(float, 3) | Array(int, 3) | List(Array(float, 2)) | List(Array(float, 3)) | List(Array(int, 2)) | List(Array(int, 3)) | Dict(int, float) | Dict(int, Array(float, 1)) | Dict(int, Array(float, 2)) | Dict(int, Array(int, 1)) | Dict(int, Array(int, 2))
+
+i: int | float | bool | Array(int, 1) | Array(int, 2) | Array(int, 3) | Array(float, 1) | Array(float, 2) | Array(float, 3) | List(int) | List(float) | List(bool) | List(Array(int, 1)) | List(Array(int, 2)) | List(Array(int, 3)) | List(Array(float, 1)) | List(Array(float, 2)) | List(Array(float, 3)) | Dict(int, int) | Dict(int, float)
+
+iterations: int | float | bool | Array(int, 1) | Array(int, 2) | Array(int, 3) | Array(float, 1) | Array(float, 2) | Array(float, 3) | List(int) | List(float) | List(bool) | List(Array(int, 1)) | List(Array(int, 2)) | List(Array(int, 3)) | List(Array(float, 1)) | List(Array(float, 2)) | List(Array(float, 3)) | Dict(int, int) | Dict(int, float)

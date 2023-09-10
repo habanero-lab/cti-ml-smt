@@ -1,0 +1,186 @@
+.. program:: monkeytype
+
+Generating type annotations
+---------------------------
+
+Use the ``monkeytype`` command-line script to generate and apply stub files
+based on recorded call traces.
+
+The script must be able to import your code. It automatically adds the current
+working directory to the Python path, so ensuring that you run ``monkeytype``
+from the root of your code is usually sufficient. Alternatively, you can set the
+``PYTHONPATH`` environment variable.
+
+.. _monkeytype-list:
+
+monkeytype list-modules
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``monkeytype list-modules`` subcommand outputs a list of all modules which
+have traces present in the trace store. This command respects only the
+:option:`--config` option.
+
+.. _monkeytype-stub:
+
+monkeytype stub
+~~~~~~~~~~~~~~~
+
+Run ``monkeytype stub some.module`` to generate a stub file for the given module
+based on call traces queried from the trace store. If the module already has
+some type annotations, those annotations will be respected and will not be
+replaced with annotations derived from traced calls.
+
+The generated stub file will be printed to standard output. If you want to save
+it to a file, redirect the output to a file (e.g. ``monkeytype stub some.module >
+some/module.pyi``).
+
+You can also run e.g. ``monkeytype stub some.module:SomeClass`` or ``monkeytype
+stub some.module:somefunc`` to generate a stub for just one class or function.
+
+MonkeyType must import your code in order to generate annotations for it, so if
+a module has import side effects, running ``monkeytype stub`` on the module
+will trigger those side effects. For "executable" modules, ensure the execution
+code is protected with ``if __name__ == '__main__'`` to avoid MonkeyType
+triggering it.
+
+.. _monkeytype-apply:
+
+monkeytype apply
+~~~~~~~~~~~~~~~~
+
+If you prefer inline type annotations, ``monkeytype apply some.module`` will
+generate annotations for ``some.module`` internally (in exactly the same way as
+``monkeytype stub`` would), but rather than printing the annotations in stub
+syntax, it will apply them directly to the code file, modifying it in-place.
+
+Obviously this is best used when the file is tracked in a version-control
+system, so you can easily see the changes made by MonkeyType and accept or
+reject them. MonkeyType annotations are rarely suitable exactly as generated;
+they are a starting point and usually require some adjustment by someone who
+understands the code.
+
+Options
+~~~~~~~
+
+Both ``monkeytype stub`` and ``monkeytype apply`` accept the following options:
+
+.. option:: -c <config-path>, --config <config-path>
+
+  The location of the :doc:`config object <configuration>` defining your
+  call-trace store and other configuration. The config-path should take the form
+  ``some.module:name``, where ``name`` is the variable in ``some.module``
+  containing your config instance.
+
+  Optionally, the value can also include a ``()`` suffix, and MonkeyType will
+  call/instantiate the imported function/class with no arguments to get the
+  actual config instance.
+
+  The default value is ``monkeytype.config:get_default_config()``, which tries
+  the config path ``monkeytype_config:CONFIG`` and falls back to
+  ``monkeytype.config:DefaultConfig()`` if there is no ``monkeytype_config``
+  module. This allows creating a custom config that will be used by default just
+  by creating ``monkeytype_config.py`` with a ``CONFIG`` instance in it.
+
+.. option:: -l <limit>, --limit <limit>
+
+  The maximum number of call traces to query from your call trace store.
+
+  See the :meth:`~monkeytype.config.Config.query_limit` config method.
+
+  Default: 2000
+
+.. option:: --disable-type-rewriting
+
+  Don't apply your configured :ref:`rewriters` to the output types.
+
+.. option:: --ignore-existing-annotations
+
+  Generate a stub based only on traced calls, ignoring (and overwriting, if
+  applying stubs) any existing type annotations in the code. (By default,
+  existing annotations in the code take precedence over traced types.)
+
+Additionally, ``monkeytype stub`` accepts:
+
+.. option:: --omit-existing-annotations
+
+  Generate a stub that omits any annotations that are already present in the
+  source. (By default, existing annotations in the source are reproduced in the
+  stub.) Because MonkeyType has to replicate existing annotations via runtime
+  introspection, and doesn't have access to the original string, its replication
+  is often imperfect, which would cause spurious conflicts when applying the
+  stub. Omitting these annotations entirely when generating a stub for
+  application has no cost, since they are already present in the source.
+
+  This option is implied by ``monkeytype apply``, since it minimizes the
+  possibility of a conflict when attempting to apply annotations.
+
+  This option is mutually exclusive with ``--ignore-existing-annotations``.
+
+.. option:: --diff
+
+  Generate a textual diff between stubs generated by preserving existing
+  annotations and ignoring them. Use this to see how accurately your annotations
+  represent what is seen in production.
+
+.. module:: monkeytype.typing
+
+.. _rewriters:
+
+Type rewriters
+~~~~~~~~~~~~~~
+
+MonkeyType's built-in type generation is quite simple: it just makes a ``Union``
+of all the types seen in traces for a given argument or return value, and
+shrinks that ``Union`` to remove redundancy. All additional type transformations
+are performed through configured type rewriters.
+
+.. class:: TypeRewriter()
+
+  The :class:`TypeRewriter` class provides a type-visitor that can be subclassed
+  to easily implement custom type transformations.
+
+  Subclasses can implement arbitrary ``rewrite_Foo`` methods for rewriting a
+  type named ``Foo``. :class:`TypeRewriter` itself implements only
+  ``rewrite_Dict``, ``rewrite_List``, ``rewrite_Set``, ``rewrite_Tuple``,
+  ``rewrite_Union`` (in addition to the methods listed below). These methods
+  just recursively rewrite all type arguments of the container types.
+
+  For example type rewriter implementations, see the source code of the
+  subclasses listed below.
+
+  .. method:: rewrite(typ: type) -> type
+
+    Public entry point to rewrite given type; return rewritten type.
+
+  .. method:: generic_rewrite(typ: type) -> type
+
+    Fallback method when no specific ``rewrite_Foo`` method is available for a
+    visited type.
+
+.. class:: RemoveEmptyContainers()
+
+  Rewrites e.g. ``Union[List[Any], List[int]]`` to ``List[int]``. The former
+  type frequently occurs when a method that takes ``List[int]`` also sometimes
+  receives the empty list, which will be typed as ``List[Any]``.
+
+.. class:: RewriteConfigDict()
+
+  Takes a generated type like ``Union[Dict[K, V1], Dict[K, V2]]`` and rewrites
+  it to ``Dict[K, Union[V1, V2]]``.
+
+.. class:: RewriteLargeUnion(max_union_len: int = 5)
+
+  Rewrites large unions (by default, more than 5 elements) to simply `Any`, for
+  better readability of functions that aren't well suited to static typing.
+
+.. class:: ChainedRewriter(rewriters: Iterable[TypeRewriter])
+
+  Accepts a list of rewriter instances and applies each in order. Useful for
+  composing rewriters, since the
+  :class:`~monkeytype.config.Config.type_rewriter` config method only allows
+  returning a single rewriter.
+
+.. class:: NoOpRewriter()
+
+  Does nothing. The default type rewriter in the base
+  :class:`~monkeytype.config.Config`.

@@ -1,0 +1,14 @@
+Please infer the types of function parameters in a program consisting of one or more functions. The syntax of types is defined as
+
+<t> ::= <dtype>
+    | Array(<dtype>, <ndim>)
+    | List(<t>)
+    | Dict(int, <t>)
+<dtype> ::= int | float | bool
+<ndim> ::= 1 | 2 | 3
+
+Please generate the top {num_preds} most probable types for each parameter using only types generated from the start symbol <t>. Respond in the format "parameter_name: t1 | t2 | ...", with types sorted by their likelihood from highest to lowest. Please generate exactly {num_preds} types per parameter and do not include any additional information in your response.
+
+The program is given below:
+
+{src}

@@ -1,0 +1,21 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[dev-packages]
+black = "*"
+isort = "*"
+flake8 = "*"
+pytest = "*"
+mypy = "*"
+e1839a8 = {path = ".",editable = true}
+sphinx = "*"
+twine = "*"
+django = "*"
+tox = "*"
+libcst = "*"
+importlib_metadata = "*"
+
+[pipenv]
+keep_outdated = true

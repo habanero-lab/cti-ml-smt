@@ -1,0 +1,13 @@
+def lu(A: Array(float64, 2), N: int32):
+# scop begin
+    for i in range(0, N):
+        for j in range(1, i):
+            for k in range(0, j):
+                A[i, j] -= A[i, k] * A[k, j]
+            A[i, j] /= A[j, j]
+
+        for j in range(i, N):
+            for k in range(0, i):
+                A[i,j] -= A[i, k] * A[k, j]
+# scop end
+    return A

@@ -1,0 +1,3 @@
+g: List(int) | Array(int, 1) | Array(int, 2) | List(float) | Array(float, 1) | Array(float, 2) | List(bool) | Array(bool, 1) | Array(bool, 2) | Dict(int, int) | Dict(int, float) | Dict(int, bool) | Dict(int, Array(int, 1)) | Dict(int, Array(int, 2)) | Dict(int, Array(float, 1)) | Dict(int, Array(float, 2)) | Dict(int, Array(bool, 1)) | Dict(int, Array(bool, 2)) | Dict(int, List(int)) | Dict(int, List(float))
+
+offset: int | float | bool | Array(int, 1) | Array(int, 2) | Array(float, 1) | Array(float, 2) | Array(bool, 1) | Array(bool, 2) | List(int) | List(float) | List(bool) | Dict(int, int) | Dict(int, float) | Dict(int, bool) | Dict(int, Array(int, 1)) | Dict(int, Array(int, 2)) | Dict(int, Array(float, 1)) | Dict(int, Array(float, 2)) | Dict(int, Array(bool, 1))

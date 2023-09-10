@@ -1,0 +1,29 @@
+def ludcmp(A: Array(float64, 2), b: Array(float64, 1), x: Array(float64, 1), y: Array(float64, 1), N: int32):
+# scop begin
+    for i in range(0, N):
+        for j in range(0, i):
+            t = A[i, j]
+            for k in range(0, j):
+                t -= A[i, k] * A[k, j]
+            A[i, j] = t / A[j, j]
+
+        for j in range(i, N):
+            t = A[i, j]
+            for k in range(0, i):
+                t -= A[i, k] * A[k, j]
+            A[i, j] = t
+
+    w = add(b, 0.0)
+    for i in range(0, N):
+        for k in range(0, i):
+            w[i] -= A[i, k] * y[k]
+        y[i] = w[i]
+
+    for i0 in range(0, N):
+        i = N - 1 - i0
+        t = y[i]
+        for k in range(i+1, N):
+            t -= A[i, k] * x[k]
+        x[i] = t / A[i, i]
+# scop end
+    return x

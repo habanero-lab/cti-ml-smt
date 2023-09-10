@@ -1,0 +1,204 @@
+.. module:: monkeytype.tracing
+
+Tracing function calls
+----------------------
+
+The core data type in MonkeyType is the :class:`CallTrace`. A :class:`CallTrace`
+instance represents a single traced call of a single function or method,
+including the concrete type of each argument and the return or yield type.
+
+A :class:`CallTrace` is recorded by :ref:`monkeytype-run` or the
+:func:`~monkeytype.trace` context manager (or direct use of a
+:class:`CallTracer`), logged via a :class:`~CallTraceLogger`, probably stored in
+a :class:`~monkeytype.db.base.CallTraceStore`, and later queried from that store
+by :ref:`monkeytype-stub` or :ref:`monkeytype-apply` and combined with all other
+traces of the same function in order to generate a stub or type annotation for
+that function.
+
+.. program:: monkeytype run
+
+.. _monkeytype-run:
+
+monkeytype run
+~~~~~~~~~~~~~~
+
+The simplest way to trace some function calls with MonkeyType is to run a Python
+script under MonkeyType tracing using ``monkeytype run`` or
+``monkeytype run -m`` at the command line::
+
+  $ monkeytype run myscript.py
+  $ monkeytype run -m mymodule
+
+``monkeytype run`` accepts the same :option:`monkeytype -c` option as
+``monkeytype stub`` and ``monkeytype apply``, to point MonkeyType to the config
+it should use.
+
+Because of the way Python treats scripts and imported modules differently,
+MonkeyType will not record traces for the entry point itself (that is, the script
+passed to ``monkeytype run`` or the module passed to ``run -m``); traces are
+recorded only for imported modules. If you want to annotate the entry point
+script/module, write another short script that imports and calls its function(s),
+and run that script with ``monkeytype run``.
+
+.. module:: monkeytype
+
+trace context manager
+~~~~~~~~~~~~~~~~~~~~~
+
+You can also trace calls by wrapping a section of code inside the :func:`trace`
+context manager::
+
+  import monkeytype
+
+  with monkeytype.trace():
+      # argument and yield/return types for all function calls will be traced
+      # and stored to `monkeytype.sqlite3`
+
+You can pass a :class:`~monkeytype.config.Config` object to :func:`trace` to
+customize its behavior::
+
+  import monkeytype
+  from my_mt_config import my_config
+
+  with monkeytype.trace(my_config):
+      # arg and yield/return types for function calls here will be traced and
+      # logged as specified by your config.
+
+.. function:: trace([config: Config]) -> ContextManager
+
+  Trace all enclosed function calls and log them per the given ``config``. If no
+  config is given, use the :class:`~monkeytype.config.DefaultConfig`.
+
+.. currentmodule:: monkeytype.tracing
+
+CallTracer
+~~~~~~~~~~
+
+.. class:: CallTracer(logger: CallTraceLogger, code_filter: CodeFilter, sample_rate: int)
+
+For more complex tracing cases where you can't easily wrap the code to trace in
+a context manager, you can also use a :class:`CallTracer` directly.
+:class:`CallTracer` doesn't accept a :class:`~monkeytype.config.Config` object;
+instead you pass it a logger, filter, and sample rate.
+
+If you have a config, you can easily pull those from it::
+
+  from monkeytype.tracing import CallTracer
+  from my_mt_config import my_config
+
+  logger = my_config.trace_logger()
+  tracer = CallTracer(
+      logger=logger,
+      max_typed_dict_size=my_config.max_typed_dict_size(),
+      code_filter=my_config.code_filter(),
+      sample_rate=my_config.sample_rate(),
+  )
+
+The :class:`CallTracer` has no public API apart from its constructor, but it is
+suitable for passing to ``sys.setprofile`` as a profiler::
+
+  sys.setprofile(tracer)
+
+  # run some code to be traced
+
+  sys.setprofile(None)  # remove the tracer
+
+If your :class:`CallTraceLogger` requires flushing, you should also do this
+after completing tracing::
+
+  logger.flush()
+
+.. _codefilters:
+
+Deciding which calls to trace
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You probably don't want to store traces for every single function called by your
+program; that will likely include a lot of calls to Python standard-library or
+third-party library functions that aren't your target for type annotation.
+
+To filter the calls that will be traced, you can return a predicate function
+from the :meth:`~monkeytype.config.Config.code_filter` method of your
+:meth:`~monkeytype.config.Config`. This function should take a `Python code
+object`_ and return a boolean: ``True`` means the function will be traced, and
+``False`` means it will not.
+
+The :class:`~monkeytype.config.DefaultConfig` includes a default code filter.
+If the environment variable ``MONKEYTYPE_TRACE_MODULES`` is set to a list of
+package and/or module names, the default filter traces only code from within
+those modules. Otherwise, the default filter simply excludes code from the
+Python standard library and site-packages.
+
+.. _Python code object: https://docs.python.org/3/reference/datamodel.html
+
+Logging traces
+~~~~~~~~~~~~~~
+
+A call-trace logger is responsible for accepting :class:`CallTrace` instances
+one by one as they are generated by the tracing code and doing something with
+them. It could print them directly to stdout, in the simplest case, or (more
+likely) hand them off to a :class:`~monkeytype.db.base.CallTraceStore` for
+storage and later retrieval.
+
+.. class:: CallTraceLogger()
+
+  Defines the interface that call-trace loggers should implement.
+
+  .. method:: log(trace: CallTrace) -> None
+
+    Accept a single :class:`CallTrace` and do something with it. This method is
+    called every time a new :class:`CallTrace` is generated.
+
+  .. method:: flush() -> None
+
+    Flush logged call traces. This method is called once on exiting from the
+    :func:`~monkeytype.trace` context manager.
+
+    This method doesn't have to be implemented; by default it is a no-op. For
+    very simple trace loggers (e.g. logging to stdout), each trace can be fully
+    handled in :meth:`log` directly as it is received, and no batching or
+    flushing is needed.
+
+.. currentmodule:: monkeytype.db.base
+
+CallTraceStoreLogger
+''''''''''''''''''''
+
+.. class:: CallTraceStoreLogger(store: CallTraceStore)
+
+The typical function of a call-trace logger is just to batch collected traces
+and then store them in a :class:`CallTraceStore`. This is implemented by
+:class:`CallTraceStoreLogger`. Its
+:meth:`~monkeytype.tracing.CallTraceLogger.log` method just appends the trace to
+an in-memory list, and its :meth:`~monkeytype.tracing.CallTraceLogger.flush`
+method saves all collected traces to the given ``store``.
+
+.. currentmodule:: monkeytype.tracing
+
+CallTrace
+'''''''''
+
+.. class:: CallTrace(func: Callable, arg_types: Dict[str, type], return_type: Optional[type] = None, yield_type: Optional[type] = None)
+
+  Type information for one traced call of one function.
+
+  .. attribute:: func: Callable
+
+    The function that was called.
+
+  .. attribute:: funcname: str
+
+    Fully-qualified name of the function, including module name (e.g.
+    ``some.module.some_func`` or ``some.module.SomeClass.some_method``).
+
+  .. attribute:: arg_types: Dict[str, type]
+
+    Dictionary mapping argument names to types, for this particular traced call.
+
+  .. attribute:: return_type: Optional[type]
+
+    Type returned by this call, or ``None`` if this call did not return.
+
+  .. attribute:: yield_type: Optional[type]
+
+    Type yielded by this call, or ``None`` if this call did not yield.

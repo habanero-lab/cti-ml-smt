@@ -1,0 +1,64 @@
+def sigm(x: double):
+    return exp(-1. * x) / (1. - exp(-1. * x))
+
+
+def log_likelihood(F: Array(double, 2), A: Array(int32, 2)) -> double:
+    """implements equation 2 of 
+    https://cs.stanford.edu/people/jure/pubs/bigclam-wsdm13.pdf"""
+
+    A_soft = F @ F.T
+
+    # Next two lines are multiplied with the adjacency matrix, A
+    # A is a {0,1} matrix, so we zero out all elements not contributing to the sum
+    FIRST_PART = mul(A, log(sub(1., exp(mul(-1., A_soft)))))
+    sum_edges = sum(FIRST_PART)
+    SECOND_PART = sub(1, A) * A_soft
+    sum_nedges = sum(SECOND_PART)
+
+    log_likeli = sum_edges - sum_nedges
+    return log_likeli
+
+
+def gradient(F: Array(double, 2), A: Array(int32, 2), i: int32) -> Array(double, 1):
+    """Implements equation 3 of
+    https://cs.stanford.edu/people/jure/pubs/bigclam-wsdm13.pdf
+
+      * i indicates the row under consideration
+
+    The many forloops in this function can be optimized, but for
+    educational purposes we write them out clearly
+    """
+
+    C = shape(F, 1)
+
+    neighbours = where(get_row(A, i))
+    nneighbours = where(sub(1, get_row(A, i)))
+    sum_neigh = zeros((C, ))
+    F_i = get_row(F, i)
+    for nb in neighbours:
+        F_nb = get_row(F, nb)
+        dotproduct = innerprod(F_nb, F_i)
+        plus_eq(sum_neigh, mul(F_nb, sigm(dotproduct)))
+
+    sum_nneigh = zeros((C, ))
+    for nnb in nneighbours:
+        plus_eq(sum_nneigh, get_row(F, nnb))
+
+    grad = sub(sum_neigh, sum_nneigh)
+    return grad
+
+
+def train(A: Array(int32, 2), F: Array(double, 2), iterations: int):
+    N = shape(A, 0)
+
+    for n in range(iterations):
+
+        for person in range(N):
+            grad = gradient(F, A, person)
+            F_p = get_row(F, person)
+            plus_eq(F_p, mul(0.005, grad))
+            set_row(F, person, maximum(0.001, F_p))
+
+        ll = log_likelihood(F, A)
+        #print('At step %5i/%5i ll is %5.3f'%(n, iterations, ll))
+    return F

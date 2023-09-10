@@ -1,0 +1,3 @@
+A: Array(float, 2) | Array(int, 2) | List(List(float)) | List(List(int)) | Dict(int, List(float)) | Dict(int, List(int)) | Array(float, 3) | Array(int, 3) | Dict(int, Dict(int, float)) | Dict(int, Dict(int, int)) | List(Array(float, 1)) | List(Array(int, 1)) | Array(bool, 2) | List(List(bool)) | Dict(int, List(bool)) | Dict(int, Array(float, 1)) | Dict(int, Array(int, 1)) | Dict(int, Dict(int, bool)) | List(Array(bool, 1)) | Dict(int, Array(bool, 1))
+
+N: int | float | bool | Array(int, 1) | Array(float, 1) | Array(bool, 1) | List(int) | List(float) | List(bool) | Dict(int, int) | Dict(int, float) | Dict(int, bool) | Array(int, 2) | Array(float, 2) | Array(bool, 2) | List(List(int)) | List(List(float)) | List(List(bool)) | Dict(int, List(int)) | Dict(int, List(float))

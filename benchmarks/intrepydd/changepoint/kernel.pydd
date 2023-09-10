@@ -1,0 +1,39 @@
+def scan_stat_2d(g: Dict(int, Array(int, 1))) -> Array(int, 2):
+    """ apply scan stat for all possible offsets -- could be done in parallel """
+
+    g_len = len(g)
+    res = empty((g_len, g_len), int32())
+    i = 0
+    for offset in g:
+        set_row(res, i, scan_stat(g, offset + 1))
+        i += 1
+
+    return res
+
+
+def scan_stat(g: Dict(int, Array(int, 1)), offset: int) -> Array(int, 1):
+    """ apply scan stat the computes size of cut from offset to n """
+
+    lo_cross_neib: List(int) = []
+    lo_cross_src: List(int) = []
+
+    hi_cross_neib = heapinit_empty()
+
+    R = zeros(len(g), int32())
+
+    for src in g:
+        if src >= offset:
+            for neib in g[src]:
+                if (neib > src):
+                    heappush(hi_cross_neib, neib, src)
+                elif (neib < offset):
+                    append(lo_cross_neib, neib)
+                    append(lo_cross_src, src)
+
+        while len(hi_cross_neib) > 0 and heap_get_key(hi_cross_neib, 0) <= src:
+            heappop(hi_cross_neib)
+
+        tmp = len(hi_cross_neib) + len(lo_cross_neib)
+        R[src] = int32(tmp)
+
+    return R

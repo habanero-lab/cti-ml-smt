@@ -1,0 +1,23 @@
+--find-links https://download.pytorch.org/whl/torch_stable.html
+torch==1.13.0+cpu
+--find-links https://data.pyg.org/whl/torch-1.13.0+cpu.html
+torch-scatter==2.0.9
+asttokens==2.2.1
+autopep8==2.0.1
+cppimport==22.8.2
+cvc5==1.0.5
+django==4.1.5
+monkeytype==22.2.0
+networkx==2.8.7
+numpy==1.23.5
+openai==0.27.2
+pandas==1.5.3
+pybind11==2.10.0
+pytest==7.2.1
+regex==2022.10.31
+scipy==1.10.0
+strip-hints==0.1.10
+tqdm==4.64.1
+transformers==4.26.0
+typed_ast==1.5.4
+typed_astunparse==2.1.4
