@@ -1,19 +1,19 @@
-# The Scipy Dataset and Machine Learning Type Inference Models
+# The SciPy Dataset and Machine Learning Type Inference Models
 
-This directory contains the code for creating the Scipy dataset and training/evaluating the Freq, DeepTyper-FS, and CodeT5-FT models.
+This directory contains the code for creating the SciPy dataset and training/evaluating the Freq, DeepTyper-FS, and CodeT5-FT models.
 
 The dataset and model files are available at Zenodo:
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8330329.svg)](https://doi.org/10.5281/zenodo.8330329)
 
-## The Scipy Dataset
+## The SciPy Dataset
 
-The Scipy dataset is created using a modified version of [MonkeyType](https://github.com/Instagram/MonkeyType), which is included in the [MonkeyType](MonkeyType) directory.
-To create the Scipy dataset by yourself, please follow the instructions in [scipy_dataset/README.md](scipy_dataset/README.md).
+The SciPy dataset is created using a modified version of [MonkeyType](https://github.com/Instagram/MonkeyType), which is included in the [MonkeyType](MonkeyType) directory.
+To create the SciPy dataset by yourself, please follow the instructions in [scipy_dataset/README.md](scipy_dataset/README.md).
 Alteratively, you can download the prebuilt dataset from Zenodo: [dataset_scipy_raw.pkl](https://zenodo.org/record/8330329/files/dataset_scipy_raw.pkl?download=1).
 
-## Preprocessing the Scipy Dataset for Training
+## Preprocessing the SciPy Dataset for Training
 
-Run the following commands to preprocess the Scipy dataset for training the models:
+Run the following commands to preprocess the SciPy dataset for training the models:
 
 ```bash
 # For Freq and DeepTyper-FS

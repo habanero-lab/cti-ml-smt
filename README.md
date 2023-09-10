@@ -21,9 +21,9 @@ The PyTorch and torch-scatter packages included in [requirements.txt](requiremen
 
 Please see the [benchmarks](benchmarks) directory.
 
-## The Scipy Dataset and Machine Learning Type Inference Models
+## The SciPy Dataset and Machine Learning Type Inference Models
 
-For the Scipy dataset and the Freq, DeepTyper-FS, and CodeT5-FT models, please refer to the [training](training) directory.
+For the SciPy dataset and the Freq, DeepTyper-FS, and CodeT5-FT models, please refer to the [training](training) directory.
 
 For the GPT-4 model, please refer to the [gpt4](gpt4) directory.
 
