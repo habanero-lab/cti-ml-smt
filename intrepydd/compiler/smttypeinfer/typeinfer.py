@@ -18,6 +18,7 @@ def infer(module: ast.AST, src: str):
 
     if glb.args.verbose:
         import time
+
         t_start = time.time()
 
     preprocessor = Preprocessor()
@@ -35,8 +36,7 @@ def infer(module: ast.AST, src: str):
             new_body.append(stmt)
     module.body = new_body
 
-    type_constraint_collector = TypeConstraintCollector(
-        functions, type_manager)
+    type_constraint_collector = TypeConstraintCollector(functions, type_manager)
     for func_info in functions.values():
         type_constraint_collector.do_func_body(func_info.fdef)
 
@@ -48,58 +48,68 @@ def infer(module: ast.AST, src: str):
         if glb.args.smtti_same_bitwidth:
             int_dtype = type_manager.create_dtype()
             float_dtype = type_manager.create_dtype()
-            type_manager.add_constraint(z3.Or(
-                int_dtype == type_manager.dtype.int32,
-                int_dtype == type_manager.dtype.int64
-            ))
-            type_manager.add_constraint(z3.Or(
-                float_dtype == type_manager.dtype.float32,
-                float_dtype == type_manager.dtype.float64
-            ))
+            type_manager.add_constraint(
+                z3.Or(
+                    int_dtype == type_manager.dtype.int32,
+                    int_dtype == type_manager.dtype.int64,
+                )
+            )
+            type_manager.add_constraint(
+                z3.Or(
+                    float_dtype == type_manager.dtype.float32,
+                    float_dtype == type_manager.dtype.float64,
+                )
+            )
             dtypes = [int_dtype, float_dtype, type_manager.dtype.bool]
         else:
             dtypes = None
         for ty in param_types:
             type_manager.add_constraint(
-                type_manager.is_valid_param_type(ty, dtypes=dtypes))
+                type_manager.is_valid_param_type(ty, dtypes=dtypes)
+            )
 
     type_manager.solver.check()
 
     if not glb.args.smtti_use_ml:
-        num_models, generated_functions = \
-            generate_typed_functions(type_manager, functions, module)
+        num_models, generated_functions = generate_typed_functions(
+            type_manager, functions, module
+        )
 
     else:
         ml_model = get_ml_model()
-        ml_constraints = ml_model.get_ml_constraints(
-            functions, src, type_manager)
+        ml_constraints = ml_model.get_ml_constraints(functions, src, type_manager)
 
         if not glb.args.smtti_ml_auto:
             param_ml_constraints = [z3.Or(*cs) for cs in ml_constraints]
             ml_ratio = glb.args.smtti_ml_ratio
-            assert 0. <= ml_ratio <= 1.
-            if ml_ratio == 1.:
+            assert 0.0 <= ml_ratio <= 1.0
+            if ml_ratio == 1.0:
                 type_manager.add_constraint(z3.And(*param_ml_constraints))
             else:
                 num_params = sum(
-                    map(lambda func_info: len(
-                        func_info.param_types), functions.values())
+                    map(
+                        lambda func_info: len(func_info.param_types), functions.values()
+                    )
                 )
                 threshold = int(num_params * ml_ratio)
                 if threshold < num_params * ml_ratio:
                     threshold += 1
                 type_manager.add_constraint(
-                    z3.Sum(*[z3.If(ml_constraint, 1, 0)
-                             for ml_constraint in param_ml_constraints])
+                    z3.Sum(
+                        *[
+                            z3.If(ml_constraint, 1, 0)
+                            for ml_constraint in param_ml_constraints
+                        ]
+                    )
                     >= threshold
                 )
-            num_models, generated_functions = \
-                generate_typed_functions(type_manager, functions, module)
+            num_models, generated_functions = generate_typed_functions(
+                type_manager, functions, module
+            )
 
         else:  # smtti_ml_auto
             num_params = sum(
-                map(lambda func_info: len(func_info.param_types),
-                    functions.values())
+                map(lambda func_info: len(func_info.param_types), functions.values())
             )
             num_models = 0
             generated_functions = set()
@@ -110,41 +120,14 @@ def infer(module: ast.AST, src: str):
                     ks = ks[:i]
                     break
             if glb.args.verbose:
-                print(f'Top-K to use: {ks}')
+                print(f"Top-K to use: {ks}")
 
-            ms = [num_params ** i for i in range(len(ks) - 1, -1, -1)]
+            ms = [num_params**i for i in range(len(ks) - 1, -1, -1)]
             scores = []
             for cs in ml_constraints:
                 for k, m in zip(ks, ms):
                     scores.append(z3.If(z3.Or(*cs[:k]), m, 0))
             score = z3.Sum(*scores)
-
-            # l = 0
-            # r = sum(ms) * num_params
-            # max_score = -1
-            # while l <= r:
-            #     mid = (l + r) // 2
-            #     if glb.args.verbose:
-            #         print(f'Testing score range: {l}, {r}')
-            #     result = type_manager.solver.check(score >= mid)
-            #     if result == z3.sat:
-            #         l = mid + 1
-            #         max_score = mid
-            #     else:
-            #         assert result == z3.unsat
-            #         r = mid - 1
-            # assert max_score >= 0
-
-            # if glb.args.verbose:
-            #     print(f'Max score: {max_score}')
-
-            # if max_score > 0:
-            #     type_manager.add_constraint(score >= max_score)
-            # num_models, generated_functions = \
-            #     generate_typed_functions(
-            #         type_manager, functions, module, num_models, generated_functions)
-            # if glb.args.verbose:
-            #     print(f'Num versions: {num_models}')
 
             min_versions = glb.args.smtti_ml_auto_min_vers
             l = 0
@@ -154,7 +137,7 @@ def infer(module: ast.AST, src: str):
                 while l <= r:
                     mid = (l + r) // 2
                     if glb.args.verbose:
-                        print(f'Testing score range: {l}, {r}')
+                        print(f"Testing score range: {l}, {r}")
                     result = type_manager.solver.check(score >= mid)
                     if result == z3.sat:
                         l = mid + 1
@@ -167,77 +150,33 @@ def infer(module: ast.AST, src: str):
                     break
 
                 if glb.args.verbose:
-                    print(f'Max score: {max_score}')
+                    print(f"Max score: {max_score}")
 
-                num_models, generated_functions = \
-                    generate_typed_functions(type_manager, functions, module,
-                                             num_models, generated_functions,
-                                             score >= max_score)
+                num_models, generated_functions = generate_typed_functions(
+                    type_manager,
+                    functions,
+                    module,
+                    num_models,
+                    generated_functions,
+                    score >= max_score,
+                )
                 if glb.args.verbose:
-                    print(f'Num versions: {num_models}')
+                    print(f"Num versions: {num_models}")
                 if num_models >= min_versions or max_score == 0:
                     break
                 l = 0
                 r = max_score - 1
 
-            # for threshold in range(num_params, -1, -1):
-            #     if glb.args.verbose:
-            #         print(f'Allow {num_params - threshold}/{num_params} '
-            #               'non-ML params')
-            #     done = False
-            #     for k in ks:
-            #         if glb.args.verbose:
-            #             print(f'Using top-{k} predictions')
-            #         param_ml_constraints = [
-            #             z3.Or(*cs[:k]) for cs in ml_constraints]
-            #         type_manager.solver.push()
-            #         type_manager.add_constraint(
-            #             z3.Sum(*[z3.If(ml_constraint, 1, 0)
-            #                      for ml_constraint in param_ml_constraints])
-            #             >= threshold
-            #         )
-            #         num_models, generated_functions = \
-            #             generate_typed_functions(
-            #                 type_manager, functions, module, num_models, generated_functions)
-            #         if num_models > 0:
-            #             if glb.args.verbose:
-            #                 print(f'{num_models} models when allowing '
-            #                       f'{num_params - threshold}/{num_params} non-ML params '
-            #                       f'using top-{k} predictions')
-            #             done = True
-            #             break
-            #         type_manager.solver.pop()
-            #     if done:
-            #         break
-
-            # for threshold in range(num_params, -1, -1):
-            #     if glb.args.verbose:
-            #         print(
-            #             f'Allow {num_params - threshold}/{num_params} non-ML params')
-            #     type_manager.solver.push()
-            #     type_manager.add_constraint(
-            #         z3.Sum(*[z3.If(ml_constraint, 1, 0)
-            #                  for ml_constraint in ml_constraints])
-            #         >= threshold
-            #     )
-            #     num_models, num_generated_functions = \
-            #         generate_typed_functions(type_manager, functions, module)
-            #     if num_models > 0:
-            #         if glb.args.verbose:
-            #             print(f'{num_models} models when allowing '
-            #                   f'{num_params - threshold}/{num_params} non-ML params')
-            #         break
-            #     type_manager.solver.pop()
-
     if glb.args.verbose:
-        print(f'Num models: {num_models}')
-        print(f'Num generated functions: {len(generated_functions)}')
+        print(f"Num models: {num_models}")
+        print(f"Num generated functions: {len(generated_functions)}")
         import time
+
         t_end = time.time()
-        print(f'SMT type inference time: {t_end - t_start}')
+        print(f"SMT type inference time: {t_end - t_start}")
 
     if num_models == 0:
-        raise glb.TypeError('Type error: type constraints unsatisfiable')
+        raise glb.TypeError("Type error: type constraints unsatisfiable")
 
     return functions
 
@@ -246,12 +185,14 @@ class MaxNumModelsExceeded(Exception):
     pass
 
 
-def generate_typed_functions(type_manager: TypeManager,
-                             functions: dict[str, 'FunctionInfo'],
-                             module: ast.Module,
-                             count: int = 0,
-                             generated_func_names: Optional[set[str]] = None,
-                             *assumptions: z3.ExprRef):
+def generate_typed_functions(
+    type_manager: TypeManager,
+    functions: dict[str, "FunctionInfo"],
+    module: ast.Module,
+    count: int = 0,
+    generated_func_names: Optional[set[str]] = None,
+    *assumptions: z3.ExprRef,
+):
     solver = type_manager.solver
     param_types = []
     for func_info in functions.values():
@@ -266,7 +207,7 @@ def generate_typed_functions(type_manager: TypeManager,
 
         if glb.args.verbose:
             if count % 100 == 0:
-                print(f'count: {count}')
+                print(f"count: {count}")
         if count > glb.args.smtti_max_smt_models:
             raise MaxNumModelsExceeded
 
@@ -287,11 +228,9 @@ def generate_typed_functions(type_manager: TypeManager,
             if glb.args.smtti_count_only:
                 continue
 
-            fdef = generate_typed_function(mangled_name,
-                                           func_info,
-                                           model,
-                                           type_manager,
-                                           functions)
+            fdef = generate_typed_function(
+                mangled_name, func_info, model, type_manager, functions
+            )
             module.body.append(fdef)
 
             symtab.register_user_func(fdef)
@@ -310,116 +249,30 @@ def generate_typed_functions(type_manager: TypeManager,
                 model_constraints = generate_for_model(solver.model())
                 solver.add(z3.Not(z3.And(*model_constraints)))
         except MaxNumModelsExceeded:
-            print(f'More than {glb.args.smtti_max_smt_models} models found. '
-                  f'Only the first {glb.args.smtti_max_smt_models} used.')
+            print(
+                f"More than {glb.args.smtti_max_smt_models} models found. "
+                f"Only the first {glb.args.smtti_max_smt_models} used."
+            )
 
     return count, generated_func_names
 
 
-# def generate_typed_functions(type_manager: TypeManager,
-#                              functions: dict[str, 'FunctionInfo'],
-#                              module: ast.Module):
-#     solver = type_manager.solver
-#     param_types = []
-#     for func_info in functions.values():
-#         param_types += func_info.param_types
-
-#     count = 0
-#     total = 0
-
-#     generated_func_names: set[str] = set()
-
-#     def generate_for_model(model: z3.ModelRef):
-#         nonlocal count, total
-#         count += 1
-#         total += 1
-
-#         if glb.args.verbose:
-#             if count % 100 == 0:
-#                 print(f'count: {count}')
-#             if total % 100 == 0:
-#                 print(f'total: {total}')
-#         if count > glb.args.smtti_max_smt_models:
-#             raise MaxNumModelsExceeded
-
-#         for func_name, func_info in functions.items():
-#             param_types: list[mytypes.MyType] = []
-#             for t in func_info.param_types:
-#                 ty = model.eval(t)
-#                 myty = type_manager.to_mytype(ty)
-#                 param_types.append(myty)
-#             mangled_name = get_mangled_function_name(func_name, param_types)
-#             if mangled_name in generated_func_names:
-#                 continue
-#             generated_func_names.add(mangled_name)
-
-#             if glb.args.smtti_count_only:
-#                 continue
-
-#             fdef = generate_typed_function(mangled_name,
-#                                            func_info,
-#                                            model,
-#                                            type_manager,
-#                                            functions)
-#             module.body.append(fdef)
-
-#             symtab.register_user_func(fdef)
-#             glb.cpp_module.add_function(fdef)
-
-#     def rec_enum(i):
-#         nonlocal count, total
-
-#         t = param_types[i]
-#         solver.push()
-
-#         while True:
-#             if solver.check() == z3.unsat:
-#                 total += 1
-#                 if total % 100 == 0:
-#                     if glb.args.verbose:
-#                         print(f'total: {total}')
-#                 break
-#             model = solver.model()
-#             ty = model.eval(t)
-
-#             if i == len(param_types) - 1:
-#                 generate_for_model(model)
-#             else:
-#                 solver.push()
-#                 solver.add(t == ty)
-#                 rec_enum(i + 1)
-#                 solver.pop()
-
-#             solver.add(t != ty)
-
-#         solver.pop()
-
-#     if not param_types:
-#         if solver.check() == z3.sat:
-#             generate_for_model(solver.model())
-#     else:
-#         try:
-#             rec_enum(0)
-#         except MaxNumModelsExceeded:
-#             print(f'More than {glb.args.smtti_max_smt_models} models found. '
-#                   f'Only the first {glb.args.smtti_max_smt_models} used.')
-
-#     return count, len(generated_func_names)
-
-
-def get_mangled_function_name(original_name: str,
-                              param_types: Sequence[mytypes.MyType]):
-    name_segs = [f'_F{len(original_name)}{original_name}']
+def get_mangled_function_name(
+    original_name: str, param_types: Sequence[mytypes.MyType]
+):
+    name_segs = [f"_F{len(original_name)}{original_name}"]
     for param_type in param_types:
         name_segs.append(param_type.get_mangled_name())
-    return ''.join(name_segs)
+    return "".join(name_segs)
 
 
-def generate_typed_function(mangled_name: str,
-                            func_info: 'FunctionInfo',
-                            model: z3.ModelRef,
-                            type_manager: TypeManager,
-                            functions: dict[str, 'FunctionInfo']):
+def generate_typed_function(
+    mangled_name: str,
+    func_info: "FunctionInfo",
+    model: z3.ModelRef,
+    type_manager: TypeManager,
+    functions: dict[str, "FunctionInfo"],
+):
     fdef = copy.deepcopy(func_info.fdef)
     fdef.name = mangled_name
 
@@ -440,19 +293,20 @@ def generate_typed_function(mangled_name: str,
 
 
 class TypeAnnotator(ast.NodeVisitor):
-
-    def __init__(self,
-                 func_info: 'FunctionInfo',
-                 model: z3.ModelRef,
-                 type_manager: TypeManager,
-                 functions: dict[str, 'FunctionInfo']):
+    def __init__(
+        self,
+        func_info: "FunctionInfo",
+        model: z3.ModelRef,
+        type_manager: TypeManager,
+        functions: dict[str, "FunctionInfo"],
+    ):
         self.func_info = func_info
         self.model = model
         self.type_manager = type_manager
         self.functions = functions
 
     def visit(self, node: ast.AST):
-        expr_id = getattr(node, 'expr_id', -1)
+        expr_id = getattr(node, "expr_id", -1)
         if expr_id >= 0:
             ty = self.func_info.expr_id_to_type[expr_id]
             myty = self.type_manager.to_mytype(self.model.eval(ty))
@@ -472,13 +326,11 @@ class TypeAnnotator(ast.NodeVisitor):
                     ty = self.model.eval(t)
                     myty = self.type_manager.to_mytype(ty)
                     param_types.append(myty)
-                mangled_name = get_mangled_function_name(
-                    func_name, param_types)
+                mangled_name = get_mangled_function_name(func_name, param_types)
                 node.func.id = mangled_name
 
 
 class Preprocessor(ast.NodeVisitor):
-
     def __init__(self):
         self.max_tuple_size = 0
 
@@ -488,7 +340,6 @@ class Preprocessor(ast.NodeVisitor):
 
 
 class FunctionInfo:
-
     def __init__(self, fdef: ast.FunctionDef, type_manager: TypeManager):
         self.fdef = fdef
         self.type_map: dict[str, z3.ExprRef] = {}
@@ -496,7 +347,8 @@ class FunctionInfo:
 
         if glb.args.smtti_use_annot and fdef.returns is not None:
             self.ret_type = type_manager.from_mytype(
-                utils.get_annotation_type(fdef.returns))
+                utils.get_annotation_type(fdef.returns)
+            )
         else:
             self.ret_type = type_manager.create_type()
 
@@ -504,23 +356,22 @@ class FunctionInfo:
         for arg in fdef.args.args:
             if glb.args.smtti_use_annot and arg.annotation is not None:
                 arg_type = type_manager.from_mytype(
-                    utils.get_annotation_type(arg.annotation))
+                    utils.get_annotation_type(arg.annotation)
+                )
             else:
                 arg_type = type_manager.create_type()
             self.type_map[arg.arg] = arg_type
             self.param_types.append(arg_type)
 
     def record_expr_type(self, node: ast.expr, ty: z3.ExprRef):
-        assert not hasattr(node, 'expr_id')
+        assert not hasattr(node, "expr_id")
         expr_id = len(self.expr_id_to_type)
-        setattr(node, 'expr_id', expr_id)
+        setattr(node, "expr_id", expr_id)
         self.expr_id_to_type.append(ty)
 
 
 class TypeConstraintCollector:
-
-    def __init__(self, functions: dict[str, FunctionInfo],
-                 type_manager: TypeManager):
+    def __init__(self, functions: dict[str, FunctionInfo], type_manager: TypeManager):
         self.functions = functions
         self.type_manager = type_manager
         self.type = type_manager.type
@@ -540,8 +391,7 @@ class TypeConstraintCollector:
             self.do_stmt(stmt)
 
         if not self.func_has_return:
-            self.add_constraint(
-                self.type_manager.is_none(self.func_info.ret_type))
+            self.add_constraint(self.type_manager.is_none(self.func_info.ret_type))
 
         self.func_info = None
 
@@ -609,19 +459,18 @@ class TypeConstraintCollector:
     def do_BoolOp(self, node: ast.BoolOp):
         assert len(node.values) >= 2
         funcname = get_operator_expansion_func(node.op)
-        assert funcname != 'n/a'
+        assert funcname != "n/a"
         ty = self.do_expr(node.values[0])
         for val in node.values[1:]:
             vty = self.do_expr(val)
-            ty = handle_libfunc_callsite(
-                funcname, [ty, vty], self.type_manager)
+            ty = handle_libfunc_callsite(funcname, [ty, vty], self.type_manager)
         return ty
 
     def do_Compare(self, node: ast.Compare):
         if len(node.comparators) != 1:
             glb.exit_on_unsupported_node(node)
         funcname = get_operator_expansion_func(node.ops[0])
-        assert funcname != 'n/a'
+        assert funcname != "n/a"
         lty = self.do_expr(node.left)
         rty = self.do_expr(node.comparators[0])
         return handle_libfunc_callsite(funcname, [lty, rty], self.type_manager)
@@ -629,7 +478,7 @@ class TypeConstraintCollector:
     def do_UnaryOp(self, node: ast.UnaryOp):
         ty = self.do_expr(node.operand)
         funcname = get_operator_expansion_func(node.op)
-        assert funcname != 'n/a'
+        assert funcname != "n/a"
         return handle_libfunc_callsite(funcname, [ty], self.type_manager)
         # self.add_constraint(self.type_manager.is_array(ty))
         # if isinstance(node.op, ast.Not):
@@ -645,7 +494,7 @@ class TypeConstraintCollector:
         lty = self.do_expr(node.right)
         rty = self.do_expr(node.left)
         funcname = get_operator_expansion_func(node.op)
-        assert funcname != 'n/a'
+        assert funcname != "n/a"
         return handle_libfunc_callsite(funcname, [lty, rty], self.type_manager)
 
     def do_Subscript(self, node: ast.Subscript):
@@ -657,18 +506,26 @@ class TypeConstraintCollector:
         if isinstance(node.slice.value, ast.Tuple):
             slice_dim = len(node.slice.value.elts)
             array_index_constraint = self.type_manager.tuple_all(
-                ity, self.type_manager.is_int)
+                ity, self.type_manager.is_int
+            )
             self.add_constraint(
                 z3.Or(
                     z3.And(
                         self.type_manager.is_array(vty),
                         self.type.array_ndim(vty) == slice_dim,
                         array_index_constraint,
-                        ty == self.type_manager.create_array(
-                            self.type.array_dtype(vty), 0)),
-                    z3.And(self.type_manager.is_dict(vty),
-                           self.type.dict_ktype(vty) == ity,
-                           ty == self.type.dict_vtype(vty))))
+                        ty
+                        == self.type_manager.create_array(
+                            self.type.array_dtype(vty), 0
+                        ),
+                    ),
+                    z3.And(
+                        self.type_manager.is_dict(vty),
+                        self.type.dict_ktype(vty) == ity,
+                        ty == self.type.dict_vtype(vty),
+                    ),
+                )
+            )
         else:
             slice_dim = 1
             array_index_constraint = self.type_manager.is_int(ity)
@@ -678,14 +535,23 @@ class TypeConstraintCollector:
                         self.type_manager.is_array(vty),
                         self.type.array_ndim(vty) == slice_dim,
                         array_index_constraint,
-                        ty == self.type_manager.create_array(
-                            self.type.array_dtype(vty), 0)),
-                    z3.And(self.type_manager.is_list(vty),
-                           self.type_manager.is_int(ity),
-                           ty == self.type.list_etype(vty)),
-                    z3.And(self.type_manager.is_dict(vty),
-                           self.type.dict_ktype(vty) == ity,
-                           ty == self.type.dict_vtype(vty))))
+                        ty
+                        == self.type_manager.create_array(
+                            self.type.array_dtype(vty), 0
+                        ),
+                    ),
+                    z3.And(
+                        self.type_manager.is_list(vty),
+                        self.type_manager.is_int(ity),
+                        ty == self.type.list_etype(vty),
+                    ),
+                    z3.And(
+                        self.type_manager.is_dict(vty),
+                        self.type.dict_ktype(vty) == ity,
+                        ty == self.type.dict_vtype(vty),
+                    ),
+                )
+            )
 
         return ty
 
@@ -699,40 +565,38 @@ class TypeConstraintCollector:
         arg_types = [self.do_expr(arg) for arg in node.args]
 
         if not isinstance(node.func, ast.Name):
-            glb.exit_on_node(node.func, 'unsupported function')
+            glb.exit_on_node(node.func, "unsupported function")
 
         # Either should be a user-defined function or a global function
         funcname = node.func.id
 
-        if funcname.startswith('_'):
+        if funcname.startswith("_"):
             # functions like _add/_sub have no meaningful return value for now
             return self.type_manager.create_none()
 
         callee_info = self.functions.get(funcname, None)
         if callee_info is not None:
             # User-defined function
-            for arg_type, param_type in zip(arg_types,
-                                            callee_info.param_types):
+            for arg_type, param_type in zip(arg_types, callee_info.param_types):
                 self.add_constraint(arg_type == param_type)
             return callee_info.ret_type
         else:
-            return handle_libfunc_callsite(funcname, arg_types,
-                                           self.type_manager)
+            return handle_libfunc_callsite(funcname, arg_types, self.type_manager)
 
     def do_AnnAssign(self, node: ast.AnnAssign):
         assert node.value
         vty = self.do_expr(node.value)
         if glb.args.smtti_use_annot:
             annot_ty = self.type_manager.from_mytype(
-                utils.get_annotation_type(node.annotation))
+                utils.get_annotation_type(node.annotation)
+            )
             self.add_constraint(vty == annot_ty)
         tty = self.do_expr(node.target)
         self.add_constraint(tty == vty)
         node.targets = [node.target]
 
     def do_AugAssign(self, node: ast.AugAssign):
-        rty = self.do_BinOp(
-            ast.BinOp(left=node.target, op=node.op, right=node.value))
+        rty = self.do_BinOp(ast.BinOp(left=node.target, op=node.op, right=node.value))
         tty = self.func_info.expr_id_to_type[node.target.expr_id]
         self.add_constraint(tty == rty)
         node.targets = [node.target]
@@ -796,12 +660,11 @@ class TypeConstraintCollector:
             z3.And(
                 self.type_manager.is_array(ity),
                 self.type.array_ndim(ity) == 1,
-                tty == self.type_manager.create_array(
-                    self.type.array_dtype(ity), 0)),
-            z3.And(self.type_manager.is_list(ity),
-                   tty == self.type.list_etype(ity)),
-            z3.And(self.type_manager.is_dict(ity),
-                   tty == self.type.dict_ktype(ity)))
+                tty == self.type_manager.create_array(self.type.array_dtype(ity), 0),
+            ),
+            z3.And(self.type_manager.is_list(ity), tty == self.type.list_etype(ity)),
+            z3.And(self.type_manager.is_dict(ity), tty == self.type.dict_ktype(ity)),
+        )
         self.add_constraint(constraint)
 
     def do_While(self, node: ast.While):
