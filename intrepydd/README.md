@@ -22,7 +22,7 @@ pyddc -verbose -smtti -smtti-use-ml -smtti-ml-model chatgpt -smtti-model /path/t
 * The `-smtti-use-ml` option enables machine learning type inference.
 * The `-smtti-ml-model` option specifies the machine learning model to use (`chatgpt` corresponds to the GPT-4 model).
 * The `-smtti-model` option specifies the path to the machine learning model file.
-* The `-smtti-ml-auto` option enables the systematic relaxation of machine learning constraints.
+* The `-smtti-ml-auto` option enables the progressive relaxation of machine learning constraints.
 
 Note that the modification to the Intrepydd compiler may have broken its original type inference and code generation functionalities.
 So please make sure to use the `-smtti` option when invoking the compiler.
