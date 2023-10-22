@@ -2,7 +2,26 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8332121.svg)](https://doi.org/10.5281/zenodo.8332121)
 
-The code for the paper "Concrete Type Inference for Code Optimization using Machine Learning with SMT Solving" by Fangke Ye, Jisheng Zhao, Jun Shirako, and Vivek Sarkar.
+The code for the paper [Concrete Type Inference for Code Optimization using Machine Learning with SMT Solving](https://dl.acm.org/doi/10.1145/3622825).
+
+```
+@article{10.1145/3622825,
+    author     = {Ye, Fangke and Zhao, Jisheng and Shirako, Jun and Sarkar, Vivek},
+    title      = {Concrete Type Inference for Code Optimization Using Machine Learning with SMT Solving},
+    year       = {2023},
+    issue_date = {October 2023},
+    publisher  = {Association for Computing Machinery},
+    address    = {New York, NY, USA},
+    volume     = {7},
+    number     = {OOPSLA2},
+    url        = {https://doi.org/10.1145/3622825},
+    doi        = {10.1145/3622825},
+    journal    = {Proc. ACM Program. Lang.},
+    month      = {oct},
+    articleno  = {249},
+    numpages   = {28}
+}
+```
 
 ## Environment Setup
 
